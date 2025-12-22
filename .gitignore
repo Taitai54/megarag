@@ -87,3 +87,8 @@ tmp/
 temp/
 *.tmp
 megarag/
+
+# Development files (not needed for users)
+CLAUDE.md
+MEGARAG_PLAN.md
+CONVERSATION_LOG.md
