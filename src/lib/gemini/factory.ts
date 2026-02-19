@@ -37,7 +37,7 @@ export function createGeminiClient(apiKey: string): GeminiClientInstance {
   });
 
   const embedding = genAI.getGenerativeModel({
-    model: 'text-embedding-004',
+    model: 'gemini-embedding-001',
   });
 
   return { genAI, flash, embedding, fileManager };

@@ -8,7 +8,7 @@ if (!apiKey) {
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-// Gemini text-embedding-004 produces 768-dimensional vectors
+// gemini-embedding-001 natively produces 3072 dims; we truncate to 768 to match the DB schema
 export const EMBEDDING_DIMENSION = 768;
 
 // Batch size for embedding generation (to avoid rate limits)
@@ -33,10 +33,13 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     throw new Error('Gemini API key not configured');
   }
 
-  const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
 
   try {
-    const result = await model.embedContent(text);
+    const result = await model.embedContent({
+      content: { parts: [{ text }], role: 'user' },
+      outputDimensionality: EMBEDDING_DIMENSION,
+    } as Parameters<typeof model.embedContent>[0]);
     return result.embedding.values;
   } catch (error) {
     console.error('Error generating embedding:', error);
@@ -60,7 +63,7 @@ export async function generateEmbeddingsBatch(
     return [];
   }
 
-  const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
   const embeddings: number[][] = [];
   let completed = 0;
 
@@ -76,7 +79,10 @@ export async function generateEmbeddingsBatch(
       }
 
       try {
-        const result = await model.embedContent(text);
+        const result = await model.embedContent({
+          content: { parts: [{ text }], role: 'user' },
+          outputDimensionality: EMBEDDING_DIMENSION,
+        } as Parameters<typeof model.embedContent>[0]);
         return result.embedding.values;
       } catch (error) {
         console.error(`Error generating embedding for text at index ${i + batchIndex}:`, error);

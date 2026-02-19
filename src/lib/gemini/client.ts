@@ -28,20 +28,20 @@ const fileManager = defaultApiKey ? new GoogleAIFileManager(defaultApiKey) : nul
 // Default models for backward compatibility
 export const geminiFlash: GenerativeModel | null = genAI
   ? genAI.getGenerativeModel({
-      model: DEFAULT_PROCESSING_MODEL,
-      generationConfig: {
-        temperature: 0.1,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 8192,
-      },
-    })
+    model: DEFAULT_PROCESSING_MODEL,
+    generationConfig: {
+      temperature: 0.1,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 8192,
+    },
+  })
   : null;
 
 export const geminiEmbedding: GenerativeModel | null = genAI
   ? genAI.getGenerativeModel({
-      model: 'text-embedding-004',
-    })
+    model: 'gemini-embedding-001',
+  })
   : null;
 
 /**
@@ -89,7 +89,10 @@ export async function generateEmbedding(text: string, apiKey?: string): Promise<
   }
 
   const client = getGeminiClient(key);
-  const result = await client.embedding.embedContent(text);
+  const result = await client.embedding.embedContent({
+    content: { parts: [{ text }], role: 'user' },
+    outputDimensionality: 768,
+  } as Parameters<typeof client.embedding.embedContent>[0]);
   return result.embedding.values;
 }
 
@@ -116,7 +119,10 @@ export async function generateEmbeddingsBatch(
     const batch = texts.slice(i, i + batchSize);
     const results = await Promise.all(
       batch.map(async (text) => {
-        const result = await client.embedding.embedContent(text);
+        const result = await client.embedding.embedContent({
+          content: { parts: [{ text }], role: 'user' },
+          outputDimensionality: 768,
+        } as Parameters<typeof client.embedding.embedContent>[0]);
         return result.embedding.values;
       })
     );
@@ -200,16 +206,27 @@ export async function uploadFileToGemini(
   const os = await import('os');
 
   const tempDir = os.tmpdir();
-  const tempPath = path.join(tempDir, `gemini-upload-${Date.now()}-${displayName}`);
+  // Sanitize temp filename — keep extension for mime detection, remove special chars
+  const ext = path.extname(displayName) || '.bin';
+  const safeName = `gemini-upload-${Date.now()}${ext}`;
+  const tempPath = path.join(tempDir, safeName);
 
   try {
     fs.writeFileSync(tempPath, buffer);
     console.log(`[Gemini] Uploading file: ${displayName}, size: ${buffer.length} bytes, mimeType: ${mimeType}`);
+    console.log(`[Gemini] Temp path: ${tempPath}`);
 
-    const uploadResult = await client.fileManager.uploadFile(tempPath, {
-      mimeType,
-      displayName,
-    });
+    let uploadResult;
+    try {
+      uploadResult = await client.fileManager.uploadFile(tempPath, {
+        mimeType,
+        displayName,
+      });
+    } catch (uploadErr: unknown) {
+      const errMsg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+      console.error(`[Gemini] File API upload failed: ${errMsg}`);
+      throw uploadErr;
+    }
 
     // Wait for file to be processed
     let file = uploadResult.file;
