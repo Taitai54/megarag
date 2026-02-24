@@ -1,0 +1,17 @@
+-- Enable Row Level Security (RLS) on all tables to prevent unauthorized anonymous access
+-- The application exclusively uses the service_role key for all backend database operations, 
+-- thus it will bypass RLS and function normally.
+
+ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS chunks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS entities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS relations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS chat_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS llm_cache ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE IF EXISTS organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS api_keys ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS usage_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS admin_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS admin_sessions ENABLE ROW LEVEL SECURITY;
