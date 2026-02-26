@@ -2,10 +2,10 @@
 
 # MegaRAG
 
-<img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js" alt="Next.js" />
+<img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js" />
 <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript" />
 <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?style=for-the-badge&logo=supabase" alt="Supabase" />
-<img src="https://img.shields.io/badge/Gemini-2.0_Flash-4285F4?style=for-the-badge&logo=google" alt="Gemini" />
+<img src="https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?style=for-the-badge&logo=google" alt="Gemini" />
 
 ### Chat With Your Files Using AI
 
@@ -2345,6 +2345,52 @@ The theme isn't being applied correctly.
 1. Clear your browser cache
 2. Check that `ThemeProvider` wraps your app in `layout.tsx`
 3. Try clicking the theme toggle multiple times
+
+---
+
+### "Storage error: mime type application/octet-stream is not supported" when uploading `.md` or `.txt` files
+
+**What this means:**
+The browser is sending `application/octet-stream` as the MIME type for text files (common with `.md` files, especially ones with spaces or special characters in the filename). Supabase Storage rejects this type.
+
+**This is already fixed** in the current codebase — the upload route derives the MIME type from the file extension rather than trusting the browser-reported type. If you see this error, make sure you're running the latest version of the code.
+
+---
+
+### "getaddrinfo ENOTFOUND your-project.supabase.co" on startup
+
+**What this means:**
+The Supabase project is paused (Supabase pauses free-tier projects after inactivity) or your environment variables are not set.
+
+**Solution:**
+1. Log in to [supabase.com](https://supabase.com), open your project, and click **Restore project** if it shows as paused
+2. Wait ~30 seconds for it to resume, then restart the dev server
+3. If it's not paused, verify `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` is correct
+
+---
+
+### `.next/dev/lock` permission error on startup
+
+**What this means:**
+A stale lock file from a previous crashed or concurrent server instance.
+
+**Solution:**
+```bash
+rm -rf .next
+npm run dev
+```
+
+---
+
+### Bash scripts fail with `$'\r': command not found` on Windows
+
+**What this means:**
+Windows CRLF line endings in shell scripts cause errors when run via Git Bash or WSL.
+
+**Solution:**
+```bash
+tr -d '\r' < scripts/test-pipeline.sh | bash
+```
 
 ---
 

@@ -16,6 +16,21 @@ export async function GET(
       );
     }
 
+    // If running in stub mode, consult in-memory store
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const { getStubDoc } = await import('@/lib/supabase/stubDocs');
+      const doc = getStubDoc(documentId);
+      if (!doc) {
+        return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+      }
+      const statusData = {
+        status: doc.status,
+        progress: doc.status === 'processed' ? 100 : 0,
+        error: doc.error_message || undefined,
+      };
+      return NextResponse.json(statusData);
+    }
+
     const { data: document, error } = await supabaseAdmin
       .from('documents')
       .select('status, chunks_count, error_message')

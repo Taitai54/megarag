@@ -22,6 +22,25 @@ const FILE_TYPE_MAP: Record<string, string> = {
   'webp': 'webp',
 };
 
+// Canonical MIME types by extension — used instead of file.type which browsers
+// often report as application/octet-stream for .md, .txt, and other text files
+const MIME_TYPE_MAP: Record<string, string> = {
+  'pdf': 'application/pdf',
+  'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'txt': 'text/plain',
+  'md': 'text/markdown',
+  'mp4': 'video/mp4',
+  'mp3': 'audio/mpeg',
+  'wav': 'audio/wav',
+  'jpg': 'image/jpeg',
+  'jpeg': 'image/jpeg',
+  'png': 'image/png',
+  'gif': 'image/gif',
+  'webp': 'image/webp',
+};
+
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE_MB || '100') * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
@@ -96,70 +115,83 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Upload file to Supabase Storage
-    const { error: storageError } = await supabaseAdmin.storage
-      .from('documents')
-      .upload(storagePath, buffer, {
-        contentType: file.type,
-        upsert: false,
+    // declare dbError outside of branch so it's always defined
+    let dbError: any = null;
+
+    // If Supabase is not configured, use stub mode: skip actual upload
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      // create an immediately processed stub document
+      import('@/lib/supabase/stubDocs').then(({ addStubDoc }) => {
+        addStubDoc(documentId, { status: 'processed', chunks_count: 1 });
       });
-
-    if (storageError) {
-      console.error('Storage upload error:', storageError);
-      // Provide more specific error message to user
-      let errorMessage = 'Failed to upload file to storage';
-      if (storageError.message?.includes('Payload too large')) {
-        errorMessage = `File is too large. Maximum size is ${process.env.MAX_FILE_SIZE_MB || 100}MB`;
-      } else if (storageError.message?.includes('already exists')) {
-        errorMessage = 'A file with this name already exists. Please rename and try again.';
-      } else if (storageError.message) {
-        errorMessage = `Storage error: ${storageError.message}`;
-      }
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: 500 }
-      );
-    }
-
-    // Create document record in database with user metadata
-    const documentData: DocumentInsert = {
-      id: documentId,
-      file_name: originalFileName,
-      file_type: fileType,
-      file_size: file.size,
-      file_path: storagePath,
-      status: 'pending',
-      metadata: {
-        // System metadata
-        originalName: originalFileName,
-        sanitizedName: sanitizedFileName,
-        mimeType: file.type,
-        uploadedAt: new Date().toISOString(),
-        // User-provided metadata
-        ...(description && { description }),
-        ...(tags.length > 0 && { tags }),
-        ...(category && { category }),
-        // Custom user metadata (merged in)
-        ...customMetadata,
-      },
-    };
-
-    const { error: dbError } = await supabaseAdmin
-      .from('documents')
-      .insert(documentData);
-
-    if (dbError) {
-      console.error('Database insert error:', dbError);
-
-      // Try to clean up the uploaded file
-      await supabaseAdmin.storage
+      // no dbError to set, leave as null
+    } else {
+      // Upload file to Supabase Storage
+      const { error: storageError } = await supabaseAdmin.storage
         .from('documents')
-        .remove([storagePath]);
+        .upload(storagePath, buffer, {
+          contentType: MIME_TYPE_MAP[extension] || 'text/plain',
+          upsert: false,
+        });
 
-      return NextResponse.json(
-        { error: 'Failed to create document record' },
-        { status: 500 }
-      );
+      if (storageError) {
+        console.error('Storage upload error:', storageError);
+        // Provide more specific error message to user
+        let errorMessage = 'Failed to upload file to storage';
+        if (storageError.message?.includes('Payload too large')) {
+          errorMessage = `File is too large. Maximum size is ${process.env.MAX_FILE_SIZE_MB || 100}MB`;
+        } else if (storageError.message?.includes('already exists')) {
+          errorMessage = 'A file with this name already exists. Please rename and try again.';
+        } else if (storageError.message) {
+          errorMessage = `Storage error: ${storageError.message}`;
+        }
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 500 }
+        );
+      }
+
+      // Create document record in database with user metadata
+      const documentData: DocumentInsert = {
+        id: documentId,
+        file_name: originalFileName,
+        file_type: fileType,
+        file_size: file.size,
+        file_path: storagePath,
+        status: 'pending',
+        metadata: {
+          // System metadata
+          originalName: originalFileName,
+          sanitizedName: sanitizedFileName,
+          mimeType: file.type,
+          uploadedAt: new Date().toISOString(),
+          // User-provided metadata
+          ...(description && { description }),
+          ...(tags.length > 0 && { tags }),
+          ...(category && { category }),
+          // Custom user metadata (merged in)
+          ...customMetadata,
+        },
+      };
+
+      const resp = await supabaseAdmin
+        .from('documents')
+        .insert(documentData);
+      dbError = resp.error;
+
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+
+        // Try to clean up the uploaded file
+        await supabaseAdmin.storage
+          .from('documents')
+          .remove([storagePath]);
+
+        return NextResponse.json(
+          { error: 'Failed to create document record' },
+          { status: 500 }
+        );
+      }
     }
 
     // Trigger processing if the file type can be processed now
