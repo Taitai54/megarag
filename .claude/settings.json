@@ -4,7 +4,13 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:api.github.com)",
       "WebFetch(domain:github.com)",
-      "mcp__MCP_DOCKER__fetch"
+      "mcp__MCP_DOCKER__fetch",
+      "Read(//c/Users/matti/OneDrive/Documents/GitHub/claudeclaw/src/**)",
+      "Read(//c/Users/matti/OneDrive/Documents/GitHub/claudeclaw/**)",
+      "Read(//c/Users/matti/AppData/Roaming/Claude/**)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\matti\\OneDrive\\Documents\\GitHub\\claudeclaw"
     ]
   }
 }
