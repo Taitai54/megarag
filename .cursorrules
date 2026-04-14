@@ -1,0 +1,57 @@
+# AI Rules and Project Context
+
+This file provides guidance to AI coding assistants (like Cursor, Windsurf, WARP, Cline) when working with code in this repository.
+
+## 1. High-Level Architecture
+- **Next.js App Router** lives in `src/app`:
+  - UI pages: landing (`/`), dashboard (`/dashboard`), chat (`/dashboard/chat`), explorer (`/dashboard/explorer`), and admin screens under `/admin`.
+  - API routes under `src/app/api` handle upload, query, documents CRUD, chat sessions, etc.
+- **Core pipeline + RAG logic** lives in `src/lib`:
+  - `processing/`: file-type router and processors (text, document, image, video, audio), plus entity extraction.
+  - `gemini/`: wraps Gemini client + embedding generation.
+  - `rag/`: holds retrieval modes (naive/local/global/hybrid/mix) and response generation.
+  - `supabase/`: browser/server clients (anon vs service-role).
+- **Data/Storage**:
+  - Supabase Postgres + pgvector store documents, chunks, entities, relations, and chat history.
+  - Storage bucket holds original files.
+  - Schema/functions live in `supabase/*.sql` (e.g., `core_schema.sql`, `white_label_schema.sql`).
+- **External Services**:
+  - Google Gemini for content extraction, embeddings, and answer generation.
+  - Docling service (FastAPI) for structured doc parsing (documented in `ARCHITECTURE.md`).
+
+## 2. Request Flow
+1. **Upload**: `POST /api/upload` -> stores file in Supabase Storage -> triggers processing pipeline.
+2. **Processing**: file type detection -> extraction -> chunking (800 tokens, 100 overlap) -> embedding generation (Gemini 768-dim) -> entity/relation extraction -> stored in Postgres.
+3. **Status Polling**: `GET /api/status/[id]` to poll processing status.
+4. **Querying**: `POST /api/query` -> embed query -> semantic search via pgvector -> LLM generation with retrieved context.
+
+## 3. Query Modes (`src/lib/rag/`)
+- `local` — chunk-level semantic search (default).
+- `global` — entity-level knowledge graph search.
+- `hybrid` — combined local + global.
+- `mix` — adaptive selection.
+- `naive` — direct LLM without retrieval.
+
+## 4. Environment Setup
+- Copy `.env.example` -> `.env.local`
+- Required variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_AI_API_KEY`, `ENCRYPTION_KEY` (32-byte base64 key).
+- Generate encryption key: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
+
+## 5. Commands
+- Install dependencies: `npm install`
+- Start dev server: `npm run dev` (Turbopack, port 3000)
+- Production build: `npm run build`
+- Start production server: `npm run start`
+- Lint: `npm run lint`
+- Pipeline smoke test: `bash scripts/test-pipeline.sh` (Requires dev server running)
+
+## 6. Troubleshooting & Fallbacks
+- `src/lib/supabase/server.ts` and `client.ts` were modified to return stubs instead of throwing when env vars are missing. This enables local development without Supabase, using `src/lib/supabase/stubDocs.ts` as an in-memory fallback.
+- If Supabase DNS fails (`ENOTFOUND`), the project might be paused.
+- On Windows/WSL, bash scripts may have CRLF issues: `tr -d '\r' < script.sh | bash`.
+- If `.next/dev/lock` causes permission errors: `rm -rf .next`.
+
+## 7. Useful References
+- `ARCHITECTURE.md` - System diagrams and end-to-end data flow.
+- `API_DOCUMENTATION.md` - Admin + V1 API endpoints and auth flows.
+- `TROUBLESHOOTING.md` - Known issues and fixes.
