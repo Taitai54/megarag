@@ -29,7 +29,7 @@ function SelectTrigger({
   size = "default",
   children,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
+}: React.PropsWithChildren<React.ComponentProps<typeof SelectPrimitive.Trigger> & { className?: string }> & {
   size?: "sm" | "default"
 }) {
   return (
@@ -56,7 +56,7 @@ function SelectContent({
   position = "item-aligned",
   align = "center",
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.PropsWithChildren<React.ComponentProps<typeof SelectPrimitive.Content>>) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -104,7 +104,7 @@ function SelectItem({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+}: React.PropsWithChildren<React.ComponentProps<typeof SelectPrimitive.Item>>) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"

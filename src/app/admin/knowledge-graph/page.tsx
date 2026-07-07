@@ -410,7 +410,7 @@ export default function AdminKnowledgeGraphPage() {
               <span className="text-sm text-muted-foreground">Nodes:</span>
               <Slider
                 value={[nodeLimit]}
-                onValueChange={([v]) => setNodeLimit(v)}
+                onValueChange={([v]: number[]) => setNodeLimit(v)}
                 min={10}
                 max={200}
                 step={10}

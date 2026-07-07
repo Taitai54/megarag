@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Get all unique entity IDs from relations
     const entityIds = new Set<string>();
-    relations?.forEach(r => {
+    relations?.forEach((r: { source_entity_id: string; target_entity_id: string }) => {
       if (r.source_entity_id) entityIds.add(r.source_entity_id);
       if (r.target_entity_id) entityIds.add(r.target_entity_id);
     });
@@ -61,10 +61,10 @@ export async function GET(request: NextRequest) {
       .select('id, entity_name, entity_type')
       .in('id', Array.from(entityIds));
 
-    const entityMap = new Map(entities?.map(e => [e.id, { name: e.entity_name, type: e.entity_type }]) || []);
+    const entityMap = new Map(entities?.map((e: { id: string; entity_name: string; entity_type: string }) => [e.id, { name: e.entity_name, type: e.entity_type }]) || []);
 
     // Enrich relations with entity names
-    let enrichedRelations: RelationWithNames[] = (relations || []).map(r => ({
+    let enrichedRelations: RelationWithNames[] = (relations || []).map((r: { id: string; source_entity_id: string; target_entity_id: string; relation_type: string; description: string | null; source_chunk_ids: string[]; created_at: string }) => ({
       id: r.id,
       source_entity_id: r.source_entity_id,
       target_entity_id: r.target_entity_id,
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       .select('relation_type')
       .eq('workspace', workspace);
 
-    const uniqueTypes = [...new Set(types?.map(t => t.relation_type) || [])];
+    const uniqueTypes = [...new Set(types?.map((t: { relation_type: string }) => t.relation_type) || [])];
 
     return NextResponse.json({
       success: true,

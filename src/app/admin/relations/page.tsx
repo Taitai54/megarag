@@ -326,8 +326,8 @@ export default function AdminRelationsPage() {
                   <div className="flex items-start gap-4">
                     <Checkbox
                       checked={selectedIds.has(relation.id)}
-                      onCheckedChange={(checked) =>
-                        handleSelect(relation.id, checked as boolean)
+                      onCheckedChange={(checked: boolean | 'indeterminate') =>
+                        handleSelect(relation.id, checked === true)
                       }
                       className="mt-1"
                     />

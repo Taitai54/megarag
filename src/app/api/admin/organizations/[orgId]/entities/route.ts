@@ -62,7 +62,7 @@ export const GET = withAdminAuth<RouteParams>(
         .select('entity_type')
         .eq('workspace', orgId);
 
-      const uniqueTypes = [...new Set(types?.map(t => t.entity_type) || [])];
+      const uniqueTypes = [...new Set(types?.map((t: { entity_type: string }) => t.entity_type) || [])];
 
       return createAdminSuccessResponse({
         entities: entities || [],

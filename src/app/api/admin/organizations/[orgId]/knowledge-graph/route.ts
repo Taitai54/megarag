@@ -55,7 +55,7 @@ export const GET = withAdminAuth<RouteParams>(
           .or(`source_entity.eq.${centerEntity},target_entity.eq.${centerEntity}`);
 
         const connectedEntities = new Set<string>([centerEntity]);
-        centerRelations?.forEach(r => {
+        centerRelations?.forEach((r: { source_entity: string; target_entity: string }) => {
           connectedEntities.add(r.source_entity);
           connectedEntities.add(r.target_entity);
         });
@@ -85,7 +85,7 @@ export const GET = withAdminAuth<RouteParams>(
       }
 
       // Get entity IDs for relation filtering
-      const fetchedEntityIds = entities?.map(e => e.id) || [];
+      const fetchedEntityIds = entities?.map((e: { id: string }) => e.id) || [];
 
       // Get relations (edges) between these entities
       let relationsQuery = supabaseAdmin
@@ -107,14 +107,14 @@ export const GET = withAdminAuth<RouteParams>(
       }
 
       // Transform to graph format
-      const nodes: GraphNode[] = (entities || []).map(e => ({
+      const nodes: GraphNode[] = (entities || []).map((e: { id: string; name: string; entity_type: string; description?: string }) => ({
         id: e.id,
         name: e.name,
         type: e.entity_type,
         description: e.description,
       }));
 
-      const edges: GraphEdge[] = (relations || []).map(r => ({
+      const edges: GraphEdge[] = (relations || []).map((r: { id: string; source_entity: string; target_entity: string; relation_type: string; description?: string }) => ({
         id: r.id,
         source: r.source_entity,
         target: r.target_entity,
@@ -128,7 +128,7 @@ export const GET = withAdminAuth<RouteParams>(
         .select('entity_type')
         .eq('workspace', orgId);
 
-      const uniqueTypes = [...new Set(types?.map(t => t.entity_type) || [])];
+      const uniqueTypes = [...new Set(types?.map((t: { entity_type: string }) => t.entity_type) || [])];
 
       return createAdminSuccessResponse({
         nodes,

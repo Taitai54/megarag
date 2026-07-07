@@ -133,7 +133,7 @@ export default function ApiKeysPage() {
             Manage your API keys for programmatic access
           </p>
         </div>
-        <Dialog open={createDialogOpen} onOpenChange={(open) => {
+        <Dialog open={createDialogOpen} onOpenChange={(open: boolean) => {
           if (!open) closeNewKeyDialog();
           else setCreateDialogOpen(true);
         }}>

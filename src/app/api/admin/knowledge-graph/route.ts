@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         .or(`source_entity_id.eq.${centerEntity},target_entity_id.eq.${centerEntity}`);
 
       const connectedEntities = new Set<string>([centerEntity]);
-      centerRelations?.forEach(r => {
+      centerRelations?.forEach((r: { source_entity_id: string; target_entity_id: string }) => {
         connectedEntities.add(r.source_entity_id);
         connectedEntities.add(r.target_entity_id);
       });
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Failed to fetch entities' }, { status: 500 });
     }
 
-    const fetchedEntityIds = entities?.map(e => e.id) || [];
+    const fetchedEntityIds = entities?.map((e: { id: string }) => e.id) || [];
 
     // Get relations (edges) between these entities
     let relationsQuery = supabaseAdmin
@@ -90,14 +90,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to graph format
-    const nodes: GraphNode[] = (entities || []).map(e => ({
+    const nodes: GraphNode[] = (entities || []).map((e: { id: string; entity_name: string; entity_type: string; description?: string }) => ({
       id: e.id,
       name: e.entity_name,
       type: e.entity_type,
       description: e.description,
     }));
 
-    const edges: GraphEdge[] = (relations || []).map(r => ({
+    const edges: GraphEdge[] = (relations || []).map((r: { id: string; source_entity_id: string; target_entity_id: string; relation_type: string; description?: string }) => ({
       id: r.id,
       source: r.source_entity_id,
       target: r.target_entity_id,
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
       .select('entity_type')
       .eq('workspace', workspace);
 
-    const uniqueTypes = [...new Set(types?.map(t => t.entity_type) || [])];
+    const uniqueTypes = [...new Set(types?.map((t: { entity_type: string }) => t.entity_type) || [])];
 
     return NextResponse.json({
       success: true,

@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       .select('entity_type')
       .eq('workspace', workspace);
 
-    const uniqueTypes = [...new Set(types?.map(t => t.entity_type) || [])];
+    const uniqueTypes = [...new Set(types?.map((t: { entity_type: string }) => t.entity_type) || [])];
 
     return NextResponse.json({
       success: true,

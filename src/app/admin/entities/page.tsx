@@ -318,7 +318,7 @@ export default function AdminEntitiesPage() {
                     <TableCell>
                       <Checkbox
                         checked={selectedIds.has(entity.id)}
-                        onCheckedChange={(checked) => handleSelect(entity.id, checked as boolean)}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => handleSelect(entity.id, checked === true)}
                       />
                     </TableCell>
                     <TableCell className="font-medium">{entity.name}</TableCell>
